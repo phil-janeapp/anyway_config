@@ -46,6 +46,9 @@ module Anyway # :nodoc:
   if ENV["ANYWAY_CONFIG_DISABLE_DOPPLER"] != "true" && ENV.key?("DOPPLER_TOKEN")
     loaders.append :doppler, Loaders::Doppler
   end
+  if ENV["ANYWAY_CONFIG_DISABLE_ONEPASSWORD"] != "true" && ENV.key?("OP_ENVIRONMENT_ID") && Utils.which("op")
+    loaders.append :onepassword, Loaders::OnePassword
+  end
 end
 
 if defined?(::Rails::VERSION)

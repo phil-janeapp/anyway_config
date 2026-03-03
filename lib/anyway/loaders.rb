@@ -8,6 +8,7 @@ module Anyway
     autoload :Env, "anyway/loaders/env"
     autoload :EJSON, "anyway/loaders/ejson"
     autoload :Doppler, "anyway/loaders/doppler"
+    autoload :OnePassword, "anyway/loaders/onepassword"
 
     class Registry
       attr_reader :registry
