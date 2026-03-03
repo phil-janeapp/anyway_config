@@ -47,6 +47,7 @@ For version 1.x see the [1-4-stable branch](https://github.com/palkan/anyway_con
 - [Local configuration](#local-files)
 - [Data loaders](#data-loaders)
   - [Doppler integration](#doppler-integration)
+  - [1Password integration](#1password-integration)
   - [EJSON support](#ejson-support)
   - [Custom loaders](#custom-loaders)
 - [Source tracing](#tracing)
@@ -775,6 +776,47 @@ Anyway::Loaders::Doppler.token = ENV["DOPPLER_TOKEN"]
 ```
 
 **NOTE:** You can opt-out from Doppler loader by specifying the`ANYWAY_CONFIG_DISABLE_DOPPLER=true` env var (in case you have the `DOPPLER_TOKEN` env var, but don't want to use it with Anyway Config).
+
+### 1Password integration
+
+Anyway Config can pull configuration data from [1Password Environments](https://developer.1password.com/docs/cli/environments/) (requires 1Password CLI v2.33.0+). Set the `OP_ENVIRONMENT_ID` environment variable to the ID of the 1Password Environment you want to load from, and ensure the `op` CLI is available in your PATH and already authenticated (via the 1Password desktop app or `eval $(op signin)`).
+
+```sh
+export OP_ENVIRONMENT_ID=your-environment-id
+```
+
+You can also configure the loader manually:
+
+```ruby
+# Add loader
+Anyway.loaders.append :onepassword, Anyway::Loaders::OnePassword
+
+# Configure the environment ID (defaults to ENV["OP_ENVIRONMENT_ID"])
+Anyway::Loaders::OnePassword.environment_id = "your-environment-id"
+```
+
+**Per-config-class targeting:** You can point a specific config class at a particular 1Password Environment using `loader_options`:
+
+```ruby
+class ProductionConfig < Anyway::Config
+  loader_options onepassword_environment_id: "your-production-env-id"
+  attr_config :host, :port
+end
+```
+
+**Layered environments:** Use `.configured` to register multiple loader instances, each targeting a different 1Password Environment. Later layers override earlier ones:
+
+```ruby
+# Load global defaults first, then environment-specific, then local overrides.
+# Each layer's values override the previous.
+Anyway.loaders.append :op_global, Anyway::Loaders::OnePassword.configured("global-env-id")
+Anyway.loaders.append :op_env,    Anyway::Loaders::OnePassword.configured("staging-env-id")
+Anyway.loaders.append :op_local,  Anyway::Loaders::OnePassword.configured("local-overrides-id")
+```
+
+Note: when using `.configured`, the `OP_ENVIRONMENT_ID` env var and the auto-registration gate are bypassed — this is intentional, as explicit registration means you are managing the loaders yourself.
+
+**NOTE:** You can opt-out from the 1Password loader by specifying the `ANYWAY_CONFIG_DISABLE_ONEPASSWORD=true` env var (in case you have the `OP_ENVIRONMENT_ID` env var set, but don't want to use it with Anyway Config).
 
 ### EJSON support
 

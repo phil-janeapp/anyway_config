@@ -14,10 +14,14 @@ module Anyway
         def environment_id
           @environment_id || ENV["OP_ENVIRONMENT_ID"]
         end
+
+        def configured(environment_id)
+          ->(**opts) { call(**opts, onepassword_environment_id: environment_id) }
+        end
       end
 
-      def call(env_prefix:, **_options)
-        env_payload = read_environment(OnePassword.environment_id)
+      def call(env_prefix:, onepassword_environment_id: OnePassword.environment_id, **_options)
+        env_payload = read_environment(onepassword_environment_id)
 
         env = ::Anyway::Env.new(type_cast: ::Anyway::NoCast, env_container: env_payload)
 

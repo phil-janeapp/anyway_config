@@ -125,4 +125,33 @@ describe Anyway::Loaders::OnePassword do
       expect(subject).to eq({})
     end
   end
+
+  context "when onepassword_environment_id is passed as a loader option" do
+    let(:override_id) { "override-env-id" }
+    let(:options) { {env_prefix: "MYAPP", onepassword_environment_id: override_id} }
+
+    before do
+      allow(Open3).to receive(:capture3)
+        .with("op", "environment", "read", override_id, "--format", "json")
+        .and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+    end
+
+    it "uses the loader option environment ID over the class default" do
+      expect(subject).to eq(expected_config)
+    end
+  end
+
+  describe ".configured" do
+    let(:configured_loader) { described_class.configured(environment_id) }
+
+    before do
+      allow(Open3).to receive(:capture3)
+        .with("op", "environment", "read", environment_id, "--format", "json")
+        .and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+    end
+
+    it "returns a callable that uses the given environment ID" do
+      expect(configured_loader.call(env_prefix: "MYAPP")).to eq(expected_config)
+    end
+  end
 end
