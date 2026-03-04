@@ -9,6 +9,7 @@ module Anyway
     autoload :EJSON, "anyway/loaders/ejson"
     autoload :Doppler, "anyway/loaders/doppler"
     autoload :OnePassword, "anyway/loaders/onepassword"
+    autoload :OnePasswordSDK, "anyway/loaders/onepassword_sdk"
 
     class Registry
       attr_reader :registry

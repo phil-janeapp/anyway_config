@@ -48,6 +48,7 @@ For version 1.x see the [1-4-stable branch](https://github.com/palkan/anyway_con
 - [Data loaders](#data-loaders)
   - [Doppler integration](#doppler-integration)
   - [1Password integration](#1password-integration)
+  - [1Password SDK integration](#1password-sdk-integration)
   - [EJSON support](#ejson-support)
   - [Custom loaders](#custom-loaders)
 - [Source tracing](#tracing)
@@ -817,6 +818,53 @@ Anyway.loaders.append :op_local,  Anyway::Loaders::OnePassword.configured("local
 Note: when using `.configured`, the `OP_ENVIRONMENT_ID` env var and the auto-registration gate are bypassed — this is intentional, as explicit registration means you are managing the loaders yourself.
 
 **NOTE:** You can opt-out from the 1Password loader by specifying the `ANYWAY_CONFIG_DISABLE_ONEPASSWORD=true` env var (in case you have the `OP_ENVIRONMENT_ID` env var set, but don't want to use it with Anyway Config).
+
+### 1Password SDK integration
+
+Anyway Config also supports loading configuration via the [1Password Ruby SDK](https://github.com/1Password/onepassword-sdk-ruby) — no `op` CLI binary required. Instead, it authenticates directly using a **service account token**.
+
+Add the `onepassword-sdk` gem to your `Gemfile`:
+
+```ruby
+gem "onepassword-sdk"
+```
+
+Set `OP_SERVICE_ACCOUNT_TOKEN` in your environment. The SDK loader is auto-registered when the gem is available and the token is set:
+
+```sh
+export OP_SERVICE_ACCOUNT_TOKEN=ops_your_service_account_token
+export OP_ENVIRONMENT_ID=your-environment-id  # optional default
+```
+
+You can also configure the loader manually:
+
+```ruby
+# Add loader
+Anyway.loaders.append :onepassword_sdk, Anyway::Loaders::OnePasswordSDK
+
+# Configure the service account token and environment ID (both default to ENV vars)
+Anyway::Loaders::OnePasswordSDK.service_account_token = "ops_your_token"
+Anyway::Loaders::OnePasswordSDK.environment_id = "your-environment-id"
+```
+
+**Per-config-class targeting:** Point a specific config class at a particular 1Password Environment using `loader_options`:
+
+```ruby
+class ProductionConfig < Anyway::Config
+  loader_options onepassword_environment_id: "your-production-env-id"
+  attr_config :host, :port
+end
+```
+
+**Layered environments:** Use `.configured` to register multiple SDK loader instances, each targeting a different 1Password Environment:
+
+```ruby
+Anyway.loaders.append :op_global, Anyway::Loaders::OnePasswordSDK.configured("global-env-id")
+Anyway.loaders.append :op_env,    Anyway::Loaders::OnePasswordSDK.configured("staging-env-id")
+Anyway.loaders.append :op_local,  Anyway::Loaders::OnePasswordSDK.configured("local-overrides-id")
+```
+
+**NOTE:** You can opt-out from the 1Password SDK loader by specifying the `ANYWAY_CONFIG_DISABLE_ONEPASSWORD_SDK=true` env var.
 
 ### EJSON support
 

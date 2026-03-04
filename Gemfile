@@ -9,6 +9,8 @@ gemspec
 eval_gemfile "gemfiles/rubocop.gemfile"
 eval_gemfile "gemfiles/rbs.gemfile"
 
+gem "onepassword-sdk", path: File.expand_path("~/Projects/onepassword-sdk-ruby")
+
 local_gemfile = "#{File.dirname(__FILE__)}/Gemfile.local"
 
 if File.exist?(local_gemfile)

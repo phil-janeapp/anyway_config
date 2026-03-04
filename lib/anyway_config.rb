@@ -49,6 +49,11 @@ module Anyway # :nodoc:
   if ENV["ANYWAY_CONFIG_DISABLE_ONEPASSWORD"] != "true" && ENV.key?("OP_ENVIRONMENT_ID") && Utils.which("op")
     loaders.append :onepassword, Loaders::OnePassword
   end
+  if ENV["ANYWAY_CONFIG_DISABLE_ONEPASSWORD_SDK"] != "true" &&
+     ENV.key?("OP_SERVICE_ACCOUNT_TOKEN") &&
+     begin; require "onepassword_sdk"; true; rescue LoadError; false; end
+    loaders.append :onepassword_sdk, Loaders::OnePasswordSDK
+  end
 end
 
 if defined?(::Rails::VERSION)
