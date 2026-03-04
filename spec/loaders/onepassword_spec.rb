@@ -10,11 +10,7 @@ describe Anyway::Loaders::OnePassword do
   let(:options) { {env_prefix: "MYAPP"} }
   let(:environment_id) { "abc123environment" }
   let(:op_response) do
-    [
-      {"name" => "MYAPP_HOST", "value" => "prod.example.com"},
-      {"name" => "MYAPP_PORT", "value" => "443"},
-      {"name" => "OTHER_KEY", "value" => "ignored"}
-    ]
+    "MYAPP_HOST=prod.example.com\nMYAPP_PORT=443\nOTHER_KEY=ignored\n"
   end
   let(:expected_config) { {"host" => "prod.example.com", "port" => "443"} }
 
@@ -23,8 +19,8 @@ describe Anyway::Loaders::OnePassword do
   context "when loading succeeds" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
-        .and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+        .with("op", "environment", "read", environment_id)
+        .and_return([op_response, "", instance_double(Process::Status, success?: true)])
     end
 
     it "returns config filtered by env_prefix" do
@@ -36,7 +32,7 @@ describe Anyway::Loaders::OnePassword do
     before do
       allow(described_class).to receive(:environment_id).and_call_original
       described_class.environment_id = environment_id
-      allow(Open3).to receive(:capture3).and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+      allow(Open3).to receive(:capture3).and_return([op_response, "", instance_double(Process::Status, success?: true)])
     end
 
     after { described_class.environment_id = nil }
@@ -57,7 +53,7 @@ describe Anyway::Loaders::OnePassword do
   context "when op CLI returns an error" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
+        .with("op", "environment", "read", environment_id)
         .and_return(["", "[ERROR] unauthorized", instance_double(Process::Status, success?: false)])
     end
 
@@ -69,7 +65,7 @@ describe Anyway::Loaders::OnePassword do
   context "when op CLI fails with empty stderr" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
+        .with("op", "environment", "read", environment_id)
         .and_return(["", "", instance_double(Process::Status, success?: false)])
     end
 
@@ -81,7 +77,7 @@ describe Anyway::Loaders::OnePassword do
   context "when the op binary is not found" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
+        .with("op", "environment", "read", environment_id)
         .and_raise(Errno::ENOENT, "No such file or directory - op")
     end
 
@@ -93,7 +89,7 @@ describe Anyway::Loaders::OnePassword do
   context "when the op binary is not executable" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
+        .with("op", "environment", "read", environment_id)
         .and_raise(Errno::EACCES, "Permission denied - op")
     end
 
@@ -102,23 +98,11 @@ describe Anyway::Loaders::OnePassword do
     end
   end
 
-  context "when op exits successfully but returns malformed JSON" do
+  context "when op exits successfully but returns output with no KEY=VALUE lines" do
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
-        .and_return(["not valid json {{{", "", instance_double(Process::Status, success?: true)])
-    end
-
-    it "raises JSON::ParserError" do
-      expect { subject }.to raise_error(JSON::ParserError)
-    end
-  end
-
-  context "when op exits successfully but returns an unexpected JSON type" do
-    before do
-      allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
-        .and_return(["42", "", instance_double(Process::Status, success?: true)])
+        .with("op", "environment", "read", environment_id)
+        .and_return(["", "", instance_double(Process::Status, success?: true)])
     end
 
     it "returns an empty config" do
@@ -132,8 +116,8 @@ describe Anyway::Loaders::OnePassword do
 
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", override_id, "--format", "json")
-        .and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+        .with("op", "environment", "read", override_id)
+        .and_return([op_response, "", instance_double(Process::Status, success?: true)])
     end
 
     it "uses the loader option environment ID over the class default" do
@@ -146,8 +130,8 @@ describe Anyway::Loaders::OnePassword do
 
     before do
       allow(Open3).to receive(:capture3)
-        .with("op", "environment", "read", environment_id, "--format", "json")
-        .and_return([op_response.to_json, "", instance_double(Process::Status, success?: true)])
+        .with("op", "environment", "read", environment_id)
+        .and_return([op_response, "", instance_double(Process::Status, success?: true)])
     end
 
     it "returns a callable that uses the given environment ID" do

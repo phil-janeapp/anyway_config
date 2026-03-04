@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "open3"
-require "json"
 
 module Anyway
   module Loaders
@@ -36,7 +35,7 @@ module Anyway
       def read_environment(environment_id)
         raise ArgumentError, "1Password environment ID is required to load configuration from 1Password" if environment_id.nil?
 
-        stdout, stderr, status = Open3.capture3("op", "environment", "read", environment_id, "--format", "json")
+        stdout, stderr, status = Open3.capture3("op", "environment", "read", environment_id)
 
         raise RequestError, stderr.strip unless status.success?
 
@@ -44,17 +43,12 @@ module Anyway
       end
 
       def parse_response(output)
-        parsed = JSON.parse(output)
-
-        # `op environment read --format json` returns an array of {name:, value:} objects.
-        # Guard the Hash case for forward-compatibility if 1Password ever changes the shape.
-        case parsed
-        when Array
-          parsed.to_h { |item| [item["name"], item["value"]] }
-        when Hash
-          parsed
-        else
-          {}
+        # `op environment read` outputs KEY=VALUE lines (one per line).
+        output.each_line.with_object({}) do |line, hash|
+          line = line.strip
+          next if line.empty?
+          key, value = line.split("=", 2)
+          hash[key] = value if key && value
         end
       end
     end
